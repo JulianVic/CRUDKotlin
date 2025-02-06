@@ -20,12 +20,12 @@ class RegisterViewModel : ViewModel() {
     fun register(name: String, username: String, email: String, password: String, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             when {
-                username.length < 8 -> {
-                    _errorMessage.value = "Username must be at least 8 characters long"
+                username.length < 3 -> {
+                    _errorMessage.value = "Username must be at least 3 characters long"
                     onComplete(false)
                 }
-                password.length < 8 -> {
-                    _errorMessage.value = "Password must be at least 8 characters long"
+                password.length < 6 -> {
+                    _errorMessage.value = "Password must be at least 6 characters long"
                     onComplete(false)
                 }
                 else -> {

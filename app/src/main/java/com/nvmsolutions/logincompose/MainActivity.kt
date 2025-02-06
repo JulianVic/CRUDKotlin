@@ -11,7 +11,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.nvmsolutions.logincompose.ui.screens.login.LoginScreen
 import com.nvmsolutions.logincompose.ui.screens.login.LoginViewModel
+import com.nvmsolutions.logincompose.ui.screens.profile.EditProfileScreen
 import com.nvmsolutions.logincompose.ui.screens.profile.ProfileScreen
+import com.nvmsolutions.logincompose.ui.screens.profile.ProfileViewModel
 import com.nvmsolutions.logincompose.ui.screens.register.RegisterScreen
 import com.nvmsolutions.logincompose.ui.screens.register.RegisterViewModel
 import com.nvmsolutions.logincompose.ui.theme.LoginComposeTheme
@@ -19,6 +21,7 @@ import com.nvmsolutions.logincompose.ui.theme.LoginComposeTheme
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
     private val registerViewModel: RegisterViewModel by viewModels()
+    private val profileViewModel: ProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +70,45 @@ class MainActivity : ComponentActivity() {
                         val user by loginViewModel.user.collectAsState()
 
                         user?.let {
-                            ProfileScreen(user = it)
+                            ProfileScreen(
+                                user = it,
+                                onEditProfileClick = {
+                                    navController.navigate("editProfile/${it.id}")
+                                },
+                                onDeleteProfileClick = {
+                                    profileViewModel.deleteUser(it.id) { success ->
+                                        if (success) {
+                                            navController.popBackStack("login", inclusive = false)
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    // In the NavHost configuration, add:
+                    composable("editProfile/{userId}") { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                        val profileViewModel: ProfileViewModel by viewModels()
+
+                        val user by profileViewModel.user.collectAsState()
+                        val errorMessage by profileViewModel.errorMessage.collectAsState()
+
+                        user?.let {
+                            EditProfileScreen(
+                                userId = userId,
+                                currentName = it.name,
+                                onUpdateClick = { newName ->
+                                    profileViewModel.updateUserName(userId, newName) { success ->
+                                        if (success) {
+                                            navController.popBackStack()
+                                        }
+                                    }
+                                },
+                                onCancelClick = {
+                                    navController.popBackStack()
+                                },
+                                errorMessage = errorMessage
+                            )
                         }
                     }
                 }

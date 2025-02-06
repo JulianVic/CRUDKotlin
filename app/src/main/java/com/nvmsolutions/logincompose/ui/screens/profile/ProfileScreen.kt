@@ -13,9 +13,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nvmsolutions.logincompose.data.model.User
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 
 @Composable
-fun ProfileScreen(user: User) {
+fun ProfileScreen(
+    user: User,
+    onEditProfileClick: () -> Unit,
+    onDeleteProfileClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,6 +50,25 @@ fun ProfileScreen(user: User) {
                 Text("Groups: ${user.groups.joinToString()}")
                 Text("Friends: ${user.friends.joinToString()}")
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onEditProfileClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Edit Profile")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onDeleteProfileClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        ) {
+            Text("Delete Profile")
         }
     }
 }

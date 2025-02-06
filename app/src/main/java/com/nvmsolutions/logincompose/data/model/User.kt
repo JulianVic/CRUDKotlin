@@ -1,7 +1,9 @@
 package com.nvmsolutions.logincompose.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class User(
-    val id: String,
+    @SerializedName("_id") val id: String,
     val name: String,
     val username: String,
     val email: String,
