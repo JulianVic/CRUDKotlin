@@ -23,7 +23,8 @@ import androidx.compose.material3.MaterialTheme
 fun ProfileScreen(
     user: User,
     onEditProfileClick: () -> Unit,
-    onDeleteProfileClick: () -> Unit
+    onDeleteProfileClick: () -> Unit,
+    onOpenCameraClick: () -> Unit // Nuevo parámetro para abrir la cámara
 ) {
     Column(
         modifier = Modifier
@@ -69,6 +70,15 @@ fun ProfileScreen(
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
             Text("Delete Profile")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onOpenCameraClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Abrir Cámara")
         }
     }
 }

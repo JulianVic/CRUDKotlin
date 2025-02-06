@@ -1,6 +1,7 @@
 package com.nvmsolutions.logincompose
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.nvmsolutions.logincompose.ui.screens.camera.CameraScreen
 import com.nvmsolutions.logincompose.ui.screens.login.LoginScreen
 import com.nvmsolutions.logincompose.ui.screens.login.LoginViewModel
 import com.nvmsolutions.logincompose.ui.screens.profile.EditProfileScreen
@@ -94,7 +96,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("profile") {
-                        // Ahora usamos el user del profileViewModel en lugar del loginViewModel
                         val user by profileViewModel.user.collectAsState()
 
                         user?.let {
@@ -111,6 +112,9 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     }
+                                },
+                                onOpenCameraClick = {
+                                    navController.navigate("camera")
                                 }
                             )
                         }
@@ -157,6 +161,19 @@ class MainActivity : ComponentActivity() {
                                 else -> CircularProgressIndicator()
                             }
                         }
+                    }
+
+                    composable("camera") {
+                        CameraScreen(
+                            onPhotoTaken = { file ->
+                                // Aquí puedes guardar la foto o hacer algo con ella
+                                Log.d("CameraScreen", "Foto tomada: ${file.absolutePath}")
+                                navController.popBackStack()
+                            },
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
                     }
                 }
             }
