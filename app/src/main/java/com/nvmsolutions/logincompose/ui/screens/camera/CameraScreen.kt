@@ -1,11 +1,14 @@
 package com.nvmsolutions.logincompose.ui.screens.camera
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -30,6 +33,8 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -73,7 +78,7 @@ fun CameraScreen(
         permission = Manifest.permission.CAMERA,
         onPermissionResult = { isGranted ->
             if (!isGranted) {
-                Log.e("CameraScreen", "Camera permission denied")
+                Log.e("CameraScreen", "Permiso de cámara denegado")
             }
         }
     )
@@ -86,7 +91,6 @@ fun CameraScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermissionState.status.isGranted) {
-            // Rest of the camera implementation remains the same
             AndroidView(
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
@@ -111,7 +115,7 @@ fun CameraScreen(
                                 imageCapture
                             )
                         } catch (e: Exception) {
-                            Log.e("CameraPreview", "Error initializing camera", e)
+                            Log.e("CameraPreview", "Error inicializando la cámara", e)
                         }
                     }, ContextCompat.getMainExecutor(ctx))
 
@@ -122,31 +126,29 @@ fun CameraScreen(
 
             Button(
                 onClick = {
-                    val photoFile = createImageFile(context)
-                    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+                    val uri = createImageFile(context)
+                    uri?.let { outputUri ->
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(
+                            context.contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues()
+                        ).build()
 
-                    imageCapture?.takePicture(
-                        outputOptions,
-                        ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageSavedCallback {
-                            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                // Guardar en la galería
-                                MediaScannerConnection.scanFile(
-                                    context,
-                                    arrayOf(photoFile.absolutePath),
-                                    arrayOf("image/jpeg")
-                                ) { _, _ ->
-                                    showSavedMessage = true
+                        imageCapture?.takePicture(
+                            outputOptions,
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                                    val savedUri = outputFileResults.savedUri
+                                    Log.d("CameraScreen", "Foto guardada en: $savedUri")
+                                    onPhotoTaken(File(savedUri?.path ?: ""))
                                 }
-                                capturedImage = photoFile
-                                onPhotoTaken(photoFile)
-                            }
 
-                            override fun onError(exc: ImageCaptureException) {
-                                Log.e("CameraScreen", "Error al tomar la foto", exc)
+                                override fun onError(exception: ImageCaptureException) {
+                                    Log.e("CameraScreen", "Error al guardar la imagen", exception)
+                                }
                             }
-                        }
-                    )
+                        )
+
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -154,6 +156,7 @@ fun CameraScreen(
             ) {
                 Text("Tomar Foto")
             }
+
         } else {
             Column(
                 modifier = Modifier
@@ -162,10 +165,10 @@ fun CameraScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Camera permission required")
+                Text("Se requiere permiso de cámara")
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                    Text("Request Permission")
+                    Text("Solicitar Permiso")
                 }
             }
         }
@@ -176,13 +179,36 @@ fun CameraScreen(
                 .align(Alignment.TopStart)
                 .padding(16.dp)
         ) {
-            Text("Back")
+            Text("Atrás")
         }
     }
 }
 
-private fun createImageFile(context: Context): File {
+private fun createImageFile(context: Context): Uri? {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val storageDir = context.getExternalFilesDir("Pictures")
-    return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir)
+    val fileName = "IMG_${timeStamp}.jpg"
+
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/Camera")
+    }
+
+    val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+    return uri
+}
+
+
+/**
+ * Convierte un Uri en una ruta de archivo absoluta
+ */
+private fun getPathFromUri(context: Context, uri: Uri): String? {
+    val cursor = context.contentResolver.query(uri, arrayOf(MediaStore.Images.Media.DATA), null, null, null)
+    cursor?.use {
+        if (it.moveToFirst()) {
+            val index = it.getColumnIndex(MediaStore.Images.Media.DATA)
+            return it.getString(index)
+        }
+    }
+    return null
 }
