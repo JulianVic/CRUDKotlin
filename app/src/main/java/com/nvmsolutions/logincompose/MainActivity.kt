@@ -4,8 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +31,7 @@ import com.nvmsolutions.logincompose.ui.theme.LoginComposeTheme
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
     private val registerViewModel: RegisterViewModel by viewModels()
+    // Ahora profileViewModel es una propiedad de la Activity para compartirlo entre pantallas
     private val profileViewModel: ProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +40,11 @@ class MainActivity : ComponentActivity() {
             LoginComposeTheme {
                 val navController = rememberNavController()
 
-                NavHost(navController = navController, startDestination = "login") {
+                NavHost(
+                    navController = navController,
+                    startDestination = "login",
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     composable("login") {
                         val errorMessage by loginViewModel.errorMessage.collectAsState()
 
@@ -37,7 +52,13 @@ class MainActivity : ComponentActivity() {
                             onLoginClick = { email, password ->
                                 loginViewModel.login(email, password) { success ->
                                     if (success && loginViewModel.user.value != null) {
-                                        navController.navigate("profile")
+                                        // Cuando el login es exitoso, actualizamos el ProfileViewModel
+                                        loginViewModel.user.value?.let { user ->
+                                            profileViewModel.setCurrentUser(user)
+                                        }
+                                        navController.navigate("profile") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
                                     }
                                 }
                             },
@@ -55,19 +76,26 @@ class MainActivity : ComponentActivity() {
                             onRegisterClick = { name, username, email, password ->
                                 registerViewModel.register(name, username, email, password) { success ->
                                     if (success && registerViewModel.user.value != null) {
-                                        navController.navigate("profile")
+                                        // Cuando el registro es exitoso, actualizamos el ProfileViewModel
+                                        registerViewModel.user.value?.let { user ->
+                                            profileViewModel.setCurrentUser(user)
+                                        }
+                                        navController.navigate("profile") {
+                                            popUpTo("register") { inclusive = true }
+                                        }
                                     }
                                 }
                             },
                             onLoginClick = {
-                                navController.navigate("login")
+                                navController.popBackStack()
                             },
                             errorMessage = errorMessage
                         )
                     }
 
                     composable("profile") {
-                        val user by loginViewModel.user.collectAsState()
+                        // Ahora usamos el user del profileViewModel en lugar del loginViewModel
+                        val user by profileViewModel.user.collectAsState()
 
                         user?.let {
                             ProfileScreen(
@@ -78,37 +106,56 @@ class MainActivity : ComponentActivity() {
                                 onDeleteProfileClick = {
                                     profileViewModel.deleteUser(it.id) { success ->
                                         if (success) {
-                                            navController.popBackStack("login", inclusive = false)
+                                            navController.navigate("login") {
+                                                popUpTo(0) { inclusive = true }
+                                            }
                                         }
                                     }
                                 }
                             )
                         }
                     }
-                    // In the NavHost configuration, add:
+
                     composable("editProfile/{userId}") { backStackEntry ->
                         val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                        val profileViewModel: ProfileViewModel by viewModels()
+                        // Ya no creamos un nuevo viewModel aquí, usamos el compartido
 
                         val user by profileViewModel.user.collectAsState()
                         val errorMessage by profileViewModel.errorMessage.collectAsState()
 
-                        user?.let {
-                            EditProfileScreen(
-                                userId = userId,
-                                currentName = it.name,
-                                onUpdateClick = { newName ->
-                                    profileViewModel.updateUserName(userId, newName) { success ->
-                                        if (success) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when {
+                                user != null -> {
+                                    EditProfileScreen(
+                                        userId = userId,
+                                        currentName = user!!.name,
+                                        onUpdateClick = { newName ->
+                                            profileViewModel.updateUserName(userId, newName) { success ->
+                                                if (success) {
+                                                    // El profileViewModel ya tiene el estado actualizado
+                                                    navController.popBackStack()
+                                                }
+                                            }
+                                        },
+                                        onCancelClick = {
                                             navController.popBackStack()
-                                        }
-                                    }
-                                },
-                                onCancelClick = {
-                                    navController.popBackStack()
-                                },
-                                errorMessage = errorMessage
-                            )
+                                        },
+                                        errorMessage = errorMessage
+                                    )
+                                }
+                                errorMessage.isNotEmpty() -> {
+                                    Text(
+                                        text = errorMessage,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                else -> CircularProgressIndicator()
+                            }
                         }
                     }
                 }
