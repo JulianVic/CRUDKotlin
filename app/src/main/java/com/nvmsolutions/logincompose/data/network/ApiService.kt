@@ -4,6 +4,7 @@ import com.nvmsolutions.logincompose.data.model.LoginRequest
 import com.nvmsolutions.logincompose.data.model.LoginResponse
 import com.nvmsolutions.logincompose.data.model.RegisterRequest
 import com.nvmsolutions.logincompose.data.model.RegisterResponse
+import com.nvmsolutions.logincompose.data.model.Task
 import com.nvmsolutions.logincompose.data.model.User
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -31,6 +32,10 @@ interface ApiService {
 
     @DELETE("api/v1/users/{id}")
     suspend fun deleteUser(@Path("id") userId: String)
+
+    // Nuevo endpoint para obtener tareas
+    @GET("api/v1/tasks")
+    suspend fun getTasks(): List<Task>
 }
 
 data class UpdateUserRequest(val name: String)

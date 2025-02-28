@@ -24,7 +24,8 @@ fun ProfileScreen(
     user: User,
     onEditProfileClick: () -> Unit,
     onDeleteProfileClick: () -> Unit,
-    onOpenCameraClick: () -> Unit // Nuevo parámetro para abrir la cámara
+    onOpenCameraClick: () -> Unit,
+    onStudentsClick: () -> Unit  // Mantenemos el mismo nombre del parámetro para compatibilidad
 ) {
     Column(
         modifier = Modifier
@@ -79,6 +80,16 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Abrir Cámara")
+        }
+
+        // Botón para ver la lista de tareas (antes era estudiantes)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onStudentsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Ver Tareas")
         }
     }
 }

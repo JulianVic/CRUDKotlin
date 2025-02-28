@@ -28,13 +28,16 @@ import com.nvmsolutions.logincompose.ui.screens.profile.ProfileScreen
 import com.nvmsolutions.logincompose.ui.screens.profile.ProfileViewModel
 import com.nvmsolutions.logincompose.ui.screens.register.RegisterScreen
 import com.nvmsolutions.logincompose.ui.screens.register.RegisterViewModel
+import com.nvmsolutions.logincompose.ui.screens.task.TaskScreen
+import com.nvmsolutions.logincompose.ui.screens.task.TaskViewModel
 import com.nvmsolutions.logincompose.ui.theme.LoginComposeTheme
 
 class MainActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
     private val registerViewModel: RegisterViewModel by viewModels()
-    // Ahora profileViewModel es una propiedad de la Activity para compartirlo entre pantallas
     private val profileViewModel: ProfileViewModel by viewModels()
+    // Añadimos el TaskViewModel
+    private val taskViewModel: TaskViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +118,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onOpenCameraClick = {
                                     navController.navigate("camera")
+                                },
+                                onStudentsClick = {
+                                    navController.navigate("tasks")
                                 }
                             )
                         }
@@ -122,7 +128,6 @@ class MainActivity : ComponentActivity() {
 
                     composable("editProfile/{userId}") { backStackEntry ->
                         val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                        // Ya no creamos un nuevo viewModel aquí, usamos el compartido
 
                         val user by profileViewModel.user.collectAsState()
                         val errorMessage by profileViewModel.errorMessage.collectAsState()
@@ -141,7 +146,6 @@ class MainActivity : ComponentActivity() {
                                         onUpdateClick = { newName ->
                                             profileViewModel.updateUserName(userId, newName) { success ->
                                                 if (success) {
-                                                    // El profileViewModel ya tiene el estado actualizado
                                                     navController.popBackStack()
                                                 }
                                             }
@@ -166,11 +170,20 @@ class MainActivity : ComponentActivity() {
                     composable("camera") {
                         CameraScreen(
                             onPhotoTaken = { file ->
-                                // Aquí puedes guardar la foto o hacer algo con ella
                                 Log.d("CameraScreen", "Foto tomada: ${file.absolutePath}")
                                 navController.popBackStack()
                             },
                             onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    // Añadimos la ruta para la nueva pantalla de tareas
+                    composable("tasks") {
+                        TaskScreen(
+                            taskViewModel = taskViewModel,
+                            onBackClick = {
                                 navController.popBackStack()
                             }
                         )
